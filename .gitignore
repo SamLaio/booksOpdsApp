@@ -1,0 +1,35 @@
+# Android / Gradle
+.gradle/
+build/
+*/build/
+local.properties
+
+# Kotlin / JVM
+*.class
+*.log
+*.hprof
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+captures/
+.navigation/
+
+# Keystore / signing
+*.jks
+*.keystore
+keystore.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# NDK / CMake
+.cxx/
+externalNativeBuild/
+
+# Generated APK/AAB outputs (optional; keep artifacts out of git)
+*.apk
+*.aab
