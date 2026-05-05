@@ -2,6 +2,9 @@ package com.example.booksopdsapp
 
 import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.LaunchedEffect
@@ -52,7 +56,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnitType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
@@ -73,7 +80,8 @@ class MainActivity : ComponentActivity() {
                 uiPrefs.edit().putBoolean(KEY_DARK_MODE, isDarkMode).apply()
             }
             MaterialTheme(
-                colorScheme = if (isDarkMode) darkColorScheme() else lightColorScheme()
+                colorScheme = if (isDarkMode) darkColorScheme() else lightColorScheme(),
+                typography = enlargedTypography(MaterialTheme.typography, 2)
             ) {
                 OpdsApp(
                     isDarkMode = isDarkMode,
@@ -82,6 +90,31 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+private fun enlargedTypography(base: Typography, deltaSp: Int): Typography {
+    fun TextStyle.bump(): TextStyle {
+        if (fontSize.type != TextUnitType.Sp) return this
+        return copy(fontSize = (fontSize.value + deltaSp).sp)
+    }
+
+    return base.copy(
+        displayLarge = base.displayLarge.bump(),
+        displayMedium = base.displayMedium.bump(),
+        displaySmall = base.displaySmall.bump(),
+        headlineLarge = base.headlineLarge.bump(),
+        headlineMedium = base.headlineMedium.bump(),
+        headlineSmall = base.headlineSmall.bump(),
+        titleLarge = base.titleLarge.bump(),
+        titleMedium = base.titleMedium.bump(),
+        titleSmall = base.titleSmall.bump(),
+        bodyLarge = base.bodyLarge.bump(),
+        bodyMedium = base.bodyMedium.bump(),
+        bodySmall = base.bodySmall.bump(),
+        labelLarge = base.labelLarge.bump(),
+        labelMedium = base.labelMedium.bump(),
+        labelSmall = base.labelSmall.bump()
+    )
 }
 
 @Composable
@@ -105,6 +138,44 @@ private fun OpdsApp(
     var loadErrorMessage by remember { mutableStateOf("") }
     val contentListState = rememberLazyListState()
     val uiScope = rememberCoroutineScope()
+    val exportProfileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        runCatching {
+            val exported = exportProfilesJson(rememberedProfiles)
+            context.contentResolver.openOutputStream(uri)?.use { stream ->
+                stream.write(exported.toByteArray(Charsets.UTF_8))
+            } ?: error("無法開啟輸出檔案")
+        }.onSuccess {
+            Toast.makeText(context, "已匯出檔案", Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(context, "匯出失敗：${it.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    val importProfileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        runCatching {
+            val raw = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { reader ->
+                reader.readText()
+            } ?: error("無法讀取匯入檔案")
+            val imported = importProfilesJson(raw)
+            if (imported.isEmpty()) error("內容不是有效的 OPDS 設定檔")
+            var merged = rememberedProfiles
+            imported.forEach { profile ->
+                merged = upsertProfile(merged, profile)
+            }
+            rememberedProfiles = merged
+            saveProfiles(context, merged)
+            imported.size
+        }.onSuccess { importedCount ->
+            Toast.makeText(context, "已匯入 $importedCount 筆", Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(context, "匯入失敗：${it.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(uiState.loading, uiState.error, uiState.feedTitle) {
         if (pendingSaveProfile && !uiState.loading) {
@@ -143,13 +214,17 @@ private fun OpdsApp(
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
             if (uiState.feedTitle.isBlank()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -225,12 +300,6 @@ private fun OpdsApp(
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (uiState.loading) {
-                    CircularProgressIndicator()
-                }
-            }
-
             if (inputExpanded) {
                 OutlinedTextField(
                     value = uiState.profileName,
@@ -365,6 +434,16 @@ private fun OpdsApp(
                     )
                 }
             }
+
+            if (uiState.loading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
         }
     }
 
@@ -416,6 +495,12 @@ private fun OpdsApp(
             },
             onDelete = { profile ->
                 pendingDeleteProfile = profile
+            },
+            onImport = {
+                importProfileLauncher.launch(arrayOf("application/json", "text/plain"))
+            },
+            onExport = {
+                exportProfileLauncher.launch("opds_profiles.json")
             },
             onClose = { showProfiles = false }
         )

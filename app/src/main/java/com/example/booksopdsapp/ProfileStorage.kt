@@ -85,6 +85,40 @@ fun upsertProfile(
     return profiles.toMutableList().apply { set(index, profile) }
 }
 
+fun exportProfilesJson(profiles: List<SavedOpdsProfile>): String {
+    val arr = JSONArray()
+    profiles.forEach { profile ->
+        arr.put(
+            JSONObject()
+                .put("name", profile.name)
+                .put("url", profile.url)
+                .put("username", profile.username)
+                .put("password", profile.password)
+        )
+    }
+    return arr.toString(2)
+}
+
+fun importProfilesJson(raw: String): List<SavedOpdsProfile> {
+    return runCatching {
+        val arr = JSONArray(raw)
+        buildList {
+            for (i in 0 until arr.length()) {
+                val obj = arr.optJSONObject(i) ?: continue
+                val profile = SavedOpdsProfile(
+                    name = obj.optString("name", "").trim(),
+                    url = obj.optString("url", "").trim(),
+                    username = obj.optString("username", "").trim(),
+                    password = obj.optString("password", "")
+                )
+                if (profile.name.isNotBlank() && profile.url.isNotBlank()) {
+                    add(profile)
+                }
+            }
+        }
+    }.getOrDefault(emptyList())
+}
+
 private fun encryptPassword(context: Context, plainPassword: String): EncryptedPassword {
     if (plainPassword.isEmpty()) {
         return EncryptedPassword("", "", "")

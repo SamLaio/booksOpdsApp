@@ -37,7 +37,7 @@ fun enqueueBookDownload(
         .setAllowedOverMetered(true)
         .setAllowedOverRoaming(true)
 
-    request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+    request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, fileName)
 
     if (username.isNotBlank()) {
         val token = Base64.encodeToString("$username:$password".toByteArray(), Base64.NO_WRAP)

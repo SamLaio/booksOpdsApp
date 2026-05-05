@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlin.math.max
 
 @Composable
@@ -31,6 +32,15 @@ fun BookCard(
     onOpen: () -> Unit
 ) {
     val canOpen = canNavigate || canRead
+    val authorStyle = MaterialTheme.typography.bodyMedium.copy(
+        fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value + 2).sp
+    )
+    val summaryStyle = MaterialTheme.typography.bodySmall.copy(
+        fontSize = (MaterialTheme.typography.bodySmall.fontSize.value + 2).sp
+    )
+    val hintStyle = MaterialTheme.typography.labelSmall.copy(
+        fontSize = (MaterialTheme.typography.labelSmall.fontSize.value + 2).sp
+    )
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -44,20 +54,20 @@ fun BookCard(
         ) {
             Text(book.title, style = MaterialTheme.typography.titleMedium)
             if (!canNavigate) {
-                Text("作者: ${book.author}", style = MaterialTheme.typography.bodyMedium)
+                Text("作者: ${book.author}", style = authorStyle)
             }
             if (book.summary.isNotBlank()) {
                 Text(
                     text = book.summary,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = summaryStyle,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             if (canNavigate) {
-                Text("點擊開啟子分類", style = MaterialTheme.typography.labelSmall)
+                Text("點擊開啟子分類", style = hintStyle)
             } else if (canRead) {
-                Text("點擊開啟書籍內容", style = MaterialTheme.typography.labelSmall)
+                Text("點擊開啟書籍內容", style = hintStyle)
             }
         }
     }
@@ -80,7 +90,7 @@ fun ProfileListScrollbar(
     val scrollFraction = (firstIndex.toFloat() / max(totalItems - visibleCount, 1).toFloat()).coerceIn(0f, 1f)
 
     BoxWithConstraints(modifier = modifier) {
-        val trackHeight = maxHeight
+        val trackHeight = this.maxHeight
         val thumbHeight = trackHeight * thumbHeightFraction
         val travel = trackHeight - thumbHeight
         val offsetY = travel * scrollFraction
