@@ -146,22 +146,6 @@ class OpdsViewModel(
         )
     }
 
-    fun startNewVisit() {
-        urlHistory.clear()
-        navigator.reset()
-        _uiState.value = _uiState.value.copy(
-            url = "",
-            feedTitle = "",
-            books = emptyList(),
-            error = null,
-            canGoBack = false,
-            canGoNextPage = false,
-            canGoPreviousPage = false,
-            canSearch = false,
-            contextLabel = ""
-        )
-    }
-
     fun searchInOpds(query: String) {
         val trimmed = query.trim()
         if (trimmed.isBlank()) {
@@ -249,14 +233,6 @@ class OpdsViewModel(
 
     fun hasNavigableLink(book: OpdsBook): Boolean = navigator.pickNavigationLink(book) != null
     fun hasReadableLink(book: OpdsBook): Boolean = navigator.pickReadableLinks(book).isNotEmpty()
-    fun hasAnyReadableLink(book: OpdsBook): Boolean = navigator.pickReadableLinks(book).isNotEmpty()
-
-    fun resolveReadableUrl(book: OpdsBook): String? {
-        val link = navigator.pickReadableLinks(book).firstOrNull() ?: return null
-        val targetUrl = navigator.resolveFromCurrentOrFallback(_uiState.value.url.trim(), link.href)
-        return targetUrl.ifBlank { null }
-    }
-
     fun resolveReadableLinks(book: OpdsBook): List<BookActionLink> {
         return navigator.pickReadableLinks(book).mapNotNull { link ->
             val url = navigator.resolveFromCurrentOrFallback(_uiState.value.url.trim(), link.href).ifBlank { return@mapNotNull null }

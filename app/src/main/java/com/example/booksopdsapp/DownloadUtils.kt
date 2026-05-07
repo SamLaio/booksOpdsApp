@@ -2,12 +2,12 @@ package com.example.booksopdsapp
 
 import android.app.DownloadManager
 import android.content.Context
-import android.net.Uri
 import android.os.Environment
 import android.util.Base64
 import android.util.Log
 import android.webkit.URLUtil
 import android.widget.Toast
+import androidx.core.net.toUri
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
@@ -48,7 +48,7 @@ fun enqueueBookDownload(
         )
     }
 
-    val request = DownloadManager.Request(Uri.parse(normalizedUrl))
+    val request = DownloadManager.Request(normalizedUrl.toUri())
         .setTitle(fileName)
         .setDescription("下載中")
         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION)
