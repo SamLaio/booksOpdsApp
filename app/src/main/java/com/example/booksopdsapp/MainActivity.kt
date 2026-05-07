@@ -13,15 +13,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -55,16 +52,19 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -76,26 +76,28 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import kotlinx.coroutines.launch
 
 private const val PREF_UI = "opds_ui_prefs"
 private const val KEY_DARK_MODE = "dark_mode"
+private const val FONT_DELTA_SP = 2
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val uiPrefs = remember { getSharedPreferences(PREF_UI, Context.MODE_PRIVATE) }
+            val uiPrefs = remember { getSharedPreferences(PREF_UI, MODE_PRIVATE) }
             var isDarkMode by rememberSaveable {
                 mutableStateOf(uiPrefs.getBoolean(KEY_DARK_MODE, false))
             }
             LaunchedEffect(isDarkMode) {
-                uiPrefs.edit().putBoolean(KEY_DARK_MODE, isDarkMode).apply()
+                uiPrefs.edit { putBoolean(KEY_DARK_MODE, isDarkMode) }
             }
             MaterialTheme(
                 colorScheme = if (isDarkMode) darkColorScheme() else lightColorScheme(),
-                typography = enlargedTypography(MaterialTheme.typography, 2)
+                typography = enlargedTypography(MaterialTheme.typography)
             ) {
                 OpdsApp(
                     isDarkMode = isDarkMode,
@@ -106,10 +108,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun enlargedTypography(base: Typography, deltaSp: Int): Typography {
+private fun enlargedTypography(base: Typography): Typography {
     fun TextStyle.bump(): TextStyle {
         if (fontSize.type != TextUnitType.Sp) return this
-        return copy(fontSize = (fontSize.value + deltaSp).sp)
+        return copy(fontSize = (fontSize.value + FONT_DELTA_SP).sp)
     }
 
     return base.copy(
@@ -132,6 +134,7 @@ private fun enlargedTypography(base: Typography, deltaSp: Int): Typography {
 }
 
 @Composable
+@Suppress("AssignedValueIsNeverRead")
 private fun OpdsApp(
     isDarkMode: Boolean,
     onToggleDarkMode: () -> Unit,
@@ -609,39 +612,45 @@ private fun LazyListScrollbar(
     state: LazyListState,
     modifier: Modifier = Modifier
 ) {
-    val layoutInfo = state.layoutInfo
-    val totalItems = layoutInfo.totalItemsCount
-    val visibleItems = layoutInfo.visibleItemsInfo
-    if (totalItems <= 0 || visibleItems.isEmpty()) return
+    val metrics by remember(state) {
+        derivedStateOf {
+            val layoutInfo = state.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val visibleItems = layoutInfo.visibleItemsInfo
+            if (totalItems <= 0 || visibleItems.isEmpty()) return@derivedStateOf null
 
-    val firstVisible = visibleItems.first().index
-    val lastVisible = visibleItems.last().index
-    val canScroll = firstVisible > 0 || lastVisible < totalItems - 1
-    if (!canScroll) return
+            val firstVisible = visibleItems.first().index
+            val lastVisible = visibleItems.last().index
+            val canScroll = firstVisible > 0 || lastVisible < totalItems - 1
+            if (!canScroll) return@derivedStateOf null
 
-    val progress = firstVisible.toFloat() / totalItems.toFloat()
-    val viewportFraction = (visibleItems.size.toFloat() / totalItems.toFloat()).coerceIn(0.08f, 1f)
+            val progress = firstVisible.toFloat() / totalItems.toFloat()
+            val viewportFraction =
+                (visibleItems.size.toFloat() / totalItems.toFloat()).coerceIn(0.08f, 1f)
+            progress to viewportFraction
+        }
+    }
+    val (progress, viewportFraction) = metrics ?: return
 
-    BoxWithConstraints(
+    Box(
         modifier = modifier
             .width(4.dp)
             .fillMaxSize()
+            .drawWithContent {
+                drawContent()
+                val trackHeight = size.height
+                val thumbHeight = (trackHeight * viewportFraction).coerceAtLeast(8f)
+                val maxOffset = (trackHeight - thumbHeight).coerceAtLeast(0f)
+                val thumbOffset = maxOffset * progress.coerceIn(0f, 1f)
+                val radius = size.width / 2f
+                drawRoundRect(
+                    color = Color.Gray.copy(alpha = 0.65f),
+                    topLeft = Offset(0f, thumbOffset),
+                    size = Size(size.width, thumbHeight),
+                    cornerRadius = CornerRadius(radius, radius)
+                )
+            }
     ) {
-        val trackHeight = maxHeight
-        val thumbHeight = trackHeight * viewportFraction
-        val maxOffset = trackHeight - thumbHeight
-        val thumbOffset = maxOffset * progress.coerceIn(0f, 1f)
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .padding(top = thumbOffset)
-                .height(thumbHeight)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-                .alpha(0.8f)
-                .background(Color.Gray.copy(alpha = 0.65f))
-        )
     }
 }
 
