@@ -29,7 +29,7 @@ class OpdsViewModel(
     private val navigator: OpdsNavigator = OpdsNavigator()
 ) : ViewModel() {
     companion object {
-        private const val DEBUG_POPUP_ENABLED = true
+        private const val DEBUG_POPUP_ENABLED = false
     }
     data class BookActionLink(
         val label: String,
