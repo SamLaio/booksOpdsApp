@@ -1,6 +1,10 @@
 package com.example.booksopdsapp
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -9,15 +13,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,14 +54,18 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,6 +75,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnitType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 
 private const val PREF_UI = "opds_ui_prefs"
@@ -136,6 +150,7 @@ private fun OpdsApp(
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var showLoadErrorDialog by remember { mutableStateOf(false) }
     var loadErrorMessage by remember { mutableStateOf("") }
+    val trackedDownloads = remember { mutableMapOf<Long, String>() }
     val contentListState = rememberLazyListState()
     val uiScope = rememberCoroutineScope()
     val exportProfileLauncher = rememberLauncherForActivityResult(
@@ -210,6 +225,41 @@ private fun OpdsApp(
                 raw
             }
             showLoadErrorDialog = true
+        }
+    }
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                if (intent.action != DownloadManager.ACTION_DOWNLOAD_COMPLETE) return
+                val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+                if (downloadId <= 0L) return
+                val fileName = trackedDownloads.remove(downloadId) ?: return
+                val dm = ctx.getSystemService(DownloadManager::class.java)
+                val query = DownloadManager.Query().setFilterById(downloadId)
+                dm.query(query).use { cursor ->
+                    if (!cursor.moveToFirst()) return
+                    val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    if (statusIndex == -1) return
+                    when (cursor.getInt(statusIndex)) {
+                        DownloadManager.STATUS_SUCCESSFUL -> {
+                            cleanupStaleDownloadNotifications(dm, downloadId, fileName)
+                            Toast.makeText(ctx, "下載完成：$fileName", Toast.LENGTH_SHORT).show()
+                        }
+                        DownloadManager.STATUS_FAILED -> {
+                            Toast.makeText(ctx, "下載失敗：$fileName", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        }
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        onDispose {
+            context.unregisterReceiver(receiver)
         }
     }
 
@@ -367,29 +417,37 @@ private fun OpdsApp(
             val visibleBooks = uiState.books
 
             Card(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-                    LazyColumn(
-                        state = contentListState,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(visibleBooks) { book ->
-                            val canNavigate = vm.hasNavigableLink(book)
-                            val canRead = vm.hasReadableLink(book)
-                            BookCard(
-                                book = book,
-                                canNavigate = canNavigate,
-                                canRead = canRead,
-                                onOpen = {
-                                    when {
-                                        canNavigate -> vm.openBook(book)
-                                        canRead -> selectedBook = book
+                Box(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = contentListState,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(visibleBooks) { book ->
+                                val canNavigate = vm.hasNavigableLink(book)
+                                val canRead = vm.hasReadableLink(book)
+                                BookCard(
+                                    book = book,
+                                    canNavigate = canNavigate,
+                                    canRead = canRead,
+                                    onOpen = {
+                                        when {
+                                            canNavigate -> vm.openBook(book)
+                                            canRead -> selectedBook = book
+                                        }
                                     }
-                                }
-                            )
-                            HorizontalDivider()
+                                )
+                                HorizontalDivider()
+                            }
                         }
                     }
+                    LazyListScrollbar(
+                        state = contentListState,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 2.dp)
+                    )
                 }
             }
 
@@ -530,16 +588,88 @@ private fun OpdsApp(
             coverUrl = coverUrl,
             onActionClick = { action ->
                 vm.showDebugMessage(vm.buildDownloadDebugMessage(action))
-                enqueueBookDownload(
+                val enqueued = enqueueBookDownload(
                     context = context,
                     action = action,
-                    book = book,
                     username = uiState.username,
                     password = uiState.password
                 )
+                if (enqueued.isNew) {
+                    trackedDownloads[enqueued.id] = enqueued.fileName
+                }
                 selectedBook = null
             },
             onDismiss = { selectedBook = null }
         )
+    }
+}
+
+@Composable
+private fun LazyListScrollbar(
+    state: LazyListState,
+    modifier: Modifier = Modifier
+) {
+    val layoutInfo = state.layoutInfo
+    val totalItems = layoutInfo.totalItemsCount
+    val visibleItems = layoutInfo.visibleItemsInfo
+    if (totalItems <= 0 || visibleItems.isEmpty()) return
+
+    val firstVisible = visibleItems.first().index
+    val lastVisible = visibleItems.last().index
+    val canScroll = firstVisible > 0 || lastVisible < totalItems - 1
+    if (!canScroll) return
+
+    val progress = firstVisible.toFloat() / totalItems.toFloat()
+    val viewportFraction = (visibleItems.size.toFloat() / totalItems.toFloat()).coerceIn(0.08f, 1f)
+
+    BoxWithConstraints(
+        modifier = modifier
+            .width(4.dp)
+            .fillMaxSize()
+    ) {
+        val trackHeight = maxHeight
+        val thumbHeight = trackHeight * viewportFraction
+        val maxOffset = trackHeight - thumbHeight
+        val thumbOffset = maxOffset * progress.coerceIn(0f, 1f)
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .padding(top = thumbOffset)
+                .height(thumbHeight)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                .alpha(0.8f)
+                .background(Color.Gray.copy(alpha = 0.65f))
+        )
+    }
+}
+
+private fun cleanupStaleDownloadNotifications(
+    dm: DownloadManager,
+    completedId: Long,
+    fileName: String
+) {
+    val query = DownloadManager.Query().setFilterByStatus(
+        DownloadManager.STATUS_PENDING or
+            DownloadManager.STATUS_PAUSED or
+            DownloadManager.STATUS_RUNNING
+    )
+    val staleIds = mutableListOf<Long>()
+    dm.query(query).use { cursor ->
+        val idIndex = cursor.getColumnIndex(DownloadManager.COLUMN_ID)
+        val titleIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TITLE)
+        if (idIndex == -1 || titleIndex == -1) return
+        while (cursor.moveToNext()) {
+            val id = cursor.getLong(idIndex)
+            if (id == completedId) continue
+            val title = cursor.getString(titleIndex).orEmpty()
+            if (title == fileName) {
+                staleIds += id
+            }
+        }
+    }
+    if (staleIds.isNotEmpty()) {
+        dm.remove(*staleIds.toLongArray())
     }
 }
