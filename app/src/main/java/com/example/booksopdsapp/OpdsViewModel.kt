@@ -322,7 +322,7 @@ class OpdsViewModel(
 
     private fun urlToExtension(url: String): String {
         val lower = url.lowercase()
-        val known = listOf("epub", "pdf", "mobi", "azw3", "azw", "fb2", "txt", "rtf", "docx", "cbz", "cbr")
+        val known = listOf("epub", "pdf", "mobi", "azw3", "azw", "fb2", "txt", "rtf", "docx", "cbz", "cbr", "zip", "rar")
         val getMatch = Regex("/get/([a-z0-9]+)(/|\\?|$)").find(lower)?.groupValues?.getOrNull(1).orEmpty()
         if (getMatch in known) return getMatch
 
