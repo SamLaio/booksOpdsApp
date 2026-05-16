@@ -72,6 +72,7 @@ class OpdsViewModel(
         }
         urlHistory.clear()
         navigator.reset()
+        showUrlChangeDebug("讀取 Feed", targetUrl)
         loadFeedInternal(
             targetUrl = targetUrl,
             username = state.username,
@@ -101,6 +102,7 @@ class OpdsViewModel(
             return
         }
         urlHistory.addLast(HistoryEntry(_uiState.value.url.trim(), _uiState.value.contextLabel))
+        showUrlChangeDebug("開啟子節點：${book.title}", targetUrl)
         loadFeedInternal(
             targetUrl = targetUrl,
             username = _uiState.value.username,
@@ -113,6 +115,7 @@ class OpdsViewModel(
     fun goBack() {
         if (urlHistory.isEmpty()) return
         val previous = urlHistory.removeLast()
+        showUrlChangeDebug("返回上一層", previous.url)
         loadFeedInternal(
             targetUrl = previous.url,
             username = _uiState.value.username,
@@ -124,6 +127,7 @@ class OpdsViewModel(
 
     fun goNextPage() {
         val next = navigator.resolveFeedLinkUrl("next", _uiState.value.url.trim()) ?: return
+        showUrlChangeDebug("前往下一頁", next)
         loadFeedInternal(
             targetUrl = next,
             username = _uiState.value.username,
@@ -137,6 +141,7 @@ class OpdsViewModel(
         val prev = navigator.resolveFeedLinkUrl("previous", _uiState.value.url.trim())
             ?: navigator.resolveFeedLinkUrl("prev", _uiState.value.url.trim())
             ?: return
+        showUrlChangeDebug("前往上一頁", prev)
         loadFeedInternal(
             targetUrl = prev,
             username = _uiState.value.username,
@@ -169,6 +174,7 @@ class OpdsViewModel(
                     return@onSuccess
                 }
                 urlHistory.addLast(HistoryEntry(_uiState.value.url.trim(), _uiState.value.contextLabel))
+                showUrlChangeDebug("搜尋：$trimmed", searchUrl)
                 loadFeedInternal(
                     targetUrl = searchUrl,
                     username = username,
@@ -263,6 +269,20 @@ class OpdsViewModel(
             appendLine("MIME 解析結果：${if (mimeExt.isBlank()) "(空)" else mimeExt}")
             append("最終 extensionHint：${if (action.extensionHint.isBlank()) "(空)" else action.extensionHint}")
         }
+    }
+
+    private fun showUrlChangeDebug(reason: String, targetUrl: String) {
+        if (!DEBUG_POPUP_ENABLED) return
+        val current = _uiState.value.url.trim().ifBlank { "(空)" }
+        val next = targetUrl.ifBlank { "(空)" }
+        showDebugMessage(
+            buildString {
+                appendLine("URL 即將變更")
+                appendLine("動作：$reason")
+                appendLine("目前 URL：$current")
+                append("目標 URL：$next")
+            }
+        )
     }
 
     private fun bestExtensionHint(type: String, url: String): String {

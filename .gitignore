@@ -16,6 +16,7 @@ local.properties
 *.iws
 captures/
 .navigation/
+AGENTS.md
 
 # Keystore / signing
 *.jks
