@@ -4,8 +4,8 @@ BooksOpdsApp 是一個以 Kotlin 與 Jetpack Compose 開發的 Android OPDS 閱�
 
 ## 目前版本
 
-- Version Name: `1.0.8`
-- Version Code: `3`
+- Version Name: `1.0.9`
+- Version Code: `4`
 - Application ID: `com.example.booksopdsapp`
 - Min SDK: `24`
 - Target SDK: `34`

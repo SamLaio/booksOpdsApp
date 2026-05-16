@@ -17,6 +17,7 @@ local.properties
 captures/
 .navigation/
 AGENTS.md
+/RELEASE*
 
 # Keystore / signing
 *.jks
