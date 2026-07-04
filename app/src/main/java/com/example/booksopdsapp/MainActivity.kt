@@ -407,7 +407,7 @@ private fun OpdsApp(
                     }
                     Button(
                         onClick = { showProfiles = true },
-                        enabled = rememberedProfiles.isNotEmpty() && !uiState.loading
+                        enabled = !uiState.loading
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.List,
