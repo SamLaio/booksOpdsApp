@@ -31,6 +31,7 @@ keystore.properties
 # Generated APK/AAB outputs
 *.apk
 *.aab
+app/release/
 release/
 
 # Local workspace notes
