@@ -2,7 +2,13 @@
 .gradle/
 build/
 */build/
+.android-home/
+.gradle-home/
 local.properties
+
+# NDK / CMake
+.cxx/
+externalNativeBuild/
 
 # Kotlin / JVM
 *.class
@@ -16,22 +22,21 @@ local.properties
 *.iws
 captures/
 .navigation/
-AGENTS.md
-/RELEASE*
 
 # Keystore / signing
 *.jks
 *.keystore
 keystore.properties
 
+# Generated APK/AAB outputs
+*.apk
+*.aab
+release/
+
+# Local workspace notes
+AGENTS.md
+/RELEASE*.md
+
 # OS files
 .DS_Store
 Thumbs.db
-
-# NDK / CMake
-.cxx/
-externalNativeBuild/
-
-# Generated APK/AAB outputs (optional; keep artifacts out of git)
-*.apk
-*.aab
