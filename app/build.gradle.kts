@@ -1,6 +1,15 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+val signingProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.isFile) {
+        file.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -11,8 +20,8 @@ android {
         applicationId = "com.example.booksopdsapp"
         minSdk = 24
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.1.0"
+        versionCode = 6
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -20,8 +29,18 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            signingProperties.getProperty("SIGNING_STORE_FILE")?.let { path -> storeFile = file(path) }
+            storePassword = signingProperties.getProperty("SIGNING_STORE_PASSWORD")
+            keyAlias = signingProperties.getProperty("SIGNING_KEY_ALIAS")
+            keyPassword = signingProperties.getProperty("SIGNING_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -74,4 +93,17 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+}
+
+val copyReleaseApk by tasks.registering(Copy::class) {
+    dependsOn("packageRelease")
+    from(layout.buildDirectory.dir("outputs/apk/release")) {
+        include("*.apk")
+    }
+    into(rootProject.layout.projectDirectory.dir("release/${android.defaultConfig.versionName}"))
+    rename { "release.apk" }
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    finalizedBy(copyReleaseApk)
 }

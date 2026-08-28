@@ -432,6 +432,7 @@ private fun OpdsApp(
                                 val canRead = vm.hasReadableLink(book)
                                 BookCard(
                                     book = book,
+                                    coverUrl = if (!canNavigate && canRead) vm.resolveCoverUrl(book) else null,
                                     canNavigate = canNavigate,
                                     canRead = canRead,
                                     onOpen = {

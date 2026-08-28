@@ -4,8 +4,8 @@ BooksOpdsApp 是一個以 Kotlin 與 Jetpack Compose 開發的 Android OPDS 閱�
 
 ## 目前版本
 
-- Version Name: `1.1.0`
-- Version Code: `5`
+- Version Name: `1.1.1`
+- Version Code: `6`
 - Application ID: `com.example.booksopdsapp`
 - Min SDK: `24`
 - Target SDK: `34`
@@ -17,7 +17,7 @@ BooksOpdsApp 是一個以 Kotlin 與 Jetpack Compose 開發的 Android OPDS 閱�
 - 瀏覽 OPDS 子分類，並保留返回上一層的導覽狀態。
 - 支援 OPDS `next` / `previous` / `prev` 分頁導覽。
 - 支援 OPDS 搜尋連結。
-- 顯示書籍詳情，包含封面、書名、作者、簡介與可下載格式。
+- 在書目列表與書籍詳情顯示封面、書名、作者、簡介與可下載格式。
 - 透過 Android DownloadManager 下載書籍檔案。
 - 依 URL、MIME type 與 OPDS link 推測下載副檔名。
 - 盡量使用伺服器回傳的 `Content-Disposition` 檔名。
@@ -74,16 +74,17 @@ app/build/outputs/apk/debug/app-debug.apk
 .\gradlew.bat assembleRelease
 ```
 
-未簽章 APK 輸出位置：
+簽章 APK 會複製到固定輸出位置：
 
 ```text
-app/release/app-release.apk
+release/[Version Name]/release.apk
 ```
 
-若要產生正式可安裝版本，請使用 Android Studio 的 `Build > Generate Signed Bundle / APK...` 進行簽章。
+也可使用 Android Studio 的 `Build > Generate Signed Bundle / APK...` 產生簽章版本。
 
 ## 注意事項
 
 - App 目前允許 HTTP 明文流量，以支援區網 OPDS 伺服器。
 - 若要公開發佈，建議使用 HTTPS 並收斂 network security 設定。
 - 版本更新時，`versionName` 增加後，`versionCode` 也應同步加 1。
+- Release 簽章設定放在未納入版本控制的 `keystore.properties`。

@@ -1,11 +1,13 @@
 package com.example.booksopdsapp
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,14 +21,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import kotlin.math.max
 
 @Composable
 fun BookCard(
     book: OpdsBook,
+    coverUrl: String?,
     canNavigate: Boolean,
     canRead: Boolean,
     onOpen: () -> Unit
@@ -46,28 +51,49 @@ fun BookCard(
             .fillMaxWidth()
             .clickable(enabled = canOpen, onClick = onOpen)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(book.title, style = MaterialTheme.typography.titleMedium)
-            if (!canNavigate) {
-                Text("作者: ${book.author}", style = authorStyle)
-            }
-            if (book.summary.isNotBlank()) {
-                Text(
-                    text = book.summary,
-                    style = summaryStyle,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+            if (coverUrl != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = coverUrl),
+                    contentDescription = "Book cover",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .width(72.dp)
+                        .height(108.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
             }
-            if (canNavigate) {
-                Text("點擊開啟子分類", style = hintStyle)
-            } else if (canRead) {
-                Text("點擊開啟書籍內容", style = hintStyle)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = book.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!canNavigate) {
+                    Text("作者: ${book.author}", style = authorStyle)
+                }
+                if (book.summary.isNotBlank()) {
+                    Text(
+                        text = book.summary,
+                        style = summaryStyle,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (canNavigate) {
+                    Text("點擊開啟子分類", style = hintStyle)
+                } else if (canRead) {
+                    Text("點擊開啟書籍內容", style = hintStyle)
+                }
             }
         }
     }
