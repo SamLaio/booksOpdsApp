@@ -1,4 +1,4 @@
-package com.example.booksopdsapp
+package tw.idv.samliao.opds
 
 import android.app.DownloadManager
 import android.content.Context

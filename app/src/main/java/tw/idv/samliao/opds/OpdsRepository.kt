@@ -1,4 +1,4 @@
-package com.example.booksopdsapp
+package tw.idv.samliao.opds
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

@@ -13,15 +13,15 @@ val signingProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.example.booksopdsapp"
+    namespace = "tw.idv.samliao.opds"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.booksopdsapp"
+        applicationId = "tw.idv.samliao.opds"
         minSdk = 24
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.1.1"
+        versionCode = 7
+        versionName = "1.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

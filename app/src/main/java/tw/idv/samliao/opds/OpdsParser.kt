@@ -1,4 +1,4 @@
-package com.example.booksopdsapp
+package tw.idv.samliao.opds
 
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory

@@ -1,4 +1,4 @@
-package com.example.booksopdsapp
+package tw.idv.samliao.opds
 
 import java.net.URI
 import java.net.URLEncoder

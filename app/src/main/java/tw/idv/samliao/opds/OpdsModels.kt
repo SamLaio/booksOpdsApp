@@ -1,4 +1,4 @@
-package com.example.booksopdsapp
+package tw.idv.samliao.opds
 
 data class OpdsBook(
     val title: String,

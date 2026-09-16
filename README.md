@@ -4,9 +4,9 @@ BooksOpdsApp 是一個以 Kotlin 與 Jetpack Compose 開發的 Android OPDS 閱�
 
 ## 目前版本
 
-- Version Name: `1.1.1`
-- Version Code: `6`
-- Application ID: `com.example.booksopdsapp`
+- Version Name: `1.1.2`
+- Version Code: `7`
+- Application ID: `tw.idv.samliao.opds`
 - Min SDK: `24`
 - Target SDK: `34`
 - Compile SDK: `34`
@@ -46,15 +46,15 @@ BooksOpdsApp 是一個以 Kotlin 與 Jetpack Compose 開發的 Android OPDS 閱�
 
 ## 專案結構
 
-- `app/src/main/java/com/example/booksopdsapp/MainActivity.kt`: Compose 主畫面與操作流程。
-- `app/src/main/java/com/example/booksopdsapp/OpdsViewModel.kt`: 畫面狀態、導覽、搜尋與下載連結解析。
-- `app/src/main/java/com/example/booksopdsapp/OpdsNavigator.kt`: OPDS link 與 URL 解析。
-- `app/src/main/java/com/example/booksopdsapp/OpdsRepository.kt`: 網路讀取。
-- `app/src/main/java/com/example/booksopdsapp/OpdsParser.kt`: OPDS XML 解析。
-- `app/src/main/java/com/example/booksopdsapp/OpdsDialogs.kt`: 搜尋、錯誤、記憶清單、書籍詳情等對話框。
-- `app/src/main/java/com/example/booksopdsapp/OpdsComponents.kt`: 書籍卡片與可重用 UI 元件。
-- `app/src/main/java/com/example/booksopdsapp/ProfileStorage.kt`: OPDS 設定檔儲存、匯入、匯出與密碼加密。
-- `app/src/main/java/com/example/booksopdsapp/DownloadUtils.kt`: 書籍下載、檔名解析、MIME type 與重複下載處理。
+- `app/src/main/java/tw/idv/samliao/opds/MainActivity.kt`: Compose 主畫面與操作流程。
+- `app/src/main/java/tw/idv/samliao/opds/OpdsViewModel.kt`: 畫面狀態、導覽、搜尋與下載連結解析。
+- `app/src/main/java/tw/idv/samliao/opds/OpdsNavigator.kt`: OPDS link 與 URL 解析。
+- `app/src/main/java/tw/idv/samliao/opds/OpdsRepository.kt`: 網路讀取。
+- `app/src/main/java/tw/idv/samliao/opds/OpdsParser.kt`: OPDS XML 解析。
+- `app/src/main/java/tw/idv/samliao/opds/OpdsDialogs.kt`: 搜尋、錯誤、記憶清單、書籍詳情等對話框。
+- `app/src/main/java/tw/idv/samliao/opds/OpdsComponents.kt`: 書籍卡片與可重用 UI 元件。
+- `app/src/main/java/tw/idv/samliao/opds/ProfileStorage.kt`: OPDS 設定檔儲存、匯入、匯出與密碼加密。
+- `app/src/main/java/tw/idv/samliao/opds/DownloadUtils.kt`: 書籍下載、檔名解析、MIME type 與重複下載處理。
 
 ## Debug 建置
 

@@ -1,4 +1,4 @@
-package com.example.booksopdsapp
+package tw.idv.samliao.opds
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

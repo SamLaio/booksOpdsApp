@@ -1,4 +1,4 @@
-package com.example.booksopdsapp
+package tw.idv.samliao.opds
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
