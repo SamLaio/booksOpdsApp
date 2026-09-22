@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
@@ -156,6 +157,10 @@ private fun OpdsApp(
     val trackedDownloads = remember { mutableMapOf<Long, String>() }
     val contentListState = rememberLazyListState()
     val uiScope = rememberCoroutineScope()
+    BackHandler(enabled = !uiState.loading && uiState.canGoBack) {
+        vm.goBack()
+        uiScope.launch { contentListState.scrollToItem(0) }
+    }
     val exportProfileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
