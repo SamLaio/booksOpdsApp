@@ -17,13 +17,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -38,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -185,8 +184,8 @@ fun ProfilesDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = onImport) { Icon(Icons.Filled.FileUpload, contentDescription = "匯入") }
-                        Button(onClick = onExport) { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "匯出") }
+                        Button(onClick = onImport) { Text(stringResource(R.string.import_profiles)) }
+                        Button(onClick = onExport) { Text(stringResource(R.string.export_profiles)) }
                     }
                     Button(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = "關閉") }
                 }
