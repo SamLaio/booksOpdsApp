@@ -1,5 +1,8 @@
 package tw.idv.samliao.opds
 
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
+import java.io.StringReader
 import java.net.URI
 import java.net.URLEncoder
 
@@ -81,40 +84,42 @@ class OpdsNavigator {
     ): String? {
         val link = currentFeedLinks.firstOrNull { it.rel.contains("search", ignoreCase = true) } ?: return null
         val baseUrl = currentFeedUrl ?: fallbackUrl
-        val encodedQuery = URLEncoder.encode(query, Charsets.UTF_8.name())
+        val encodedQuery = URLEncoder.encode(query, Charsets.UTF_8.name()).replace("+", "%20")
         var href = link.href
+        var templateBaseUrl = baseUrl
         if (link.type.contains("opensearchdescription+xml", ignoreCase = true) ||
             href.contains("feed=osd", ignoreCase = true)
         ) {
             val osdUrl = resolveUrl(baseUrl, href)
             val osdXml = fetchText(osdUrl, username, password)
-            val template = Regex("template\\s*=\\s*\"([^\"]+)\"", RegexOption.IGNORE_CASE)
-                .find(osdXml)
-                ?.groupValues
-                ?.getOrNull(1)
-            if (!template.isNullOrBlank()) {
-                href = decodeXmlEntities(template)
-            }
+            href = findSearchTemplate(osdXml) ?: return null
+            templateBaseUrl = osdUrl
         }
-        href = href
-            .replace("{searchTerms}", encodedQuery)
-            .replace("{searchTerms?}", encodedQuery)
-            .replace("{count}", "30")
-            .replace("{startIndex}", "0")
-            .replace("{startPage}", "1")
-        return resolveUrl(baseUrl, href).ifBlank { null }
+        for ((name, value) in mapOf("searchTerms" to encodedQuery, "count" to "30", "startIndex" to "0", "startPage" to "1")) {
+            href = href.replace("{$name}", value).replace("{$name?}", value)
+        }
+        href = href.replace(Regex("\\{[^{}]+\\?}"), "")
+        if (href.contains('{') || href.contains('}')) return null
+        return resolveUrl(templateBaseUrl, href).ifBlank { null }
     }
 
     private fun resolveUrl(baseUrl: String, href: String): String {
         return runCatching { URI(baseUrl).resolve(href).toString() }.getOrElse { href }
     }
 
-    private fun decodeXmlEntities(value: String): String {
-        return value
-            .replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", "\"")
-            .replace("&apos;", "'")
+    private fun findSearchTemplate(xml: String): String? {
+        val parser = XmlPullParserFactory.newInstance().apply {
+            isNamespaceAware = true
+        }.newPullParser()
+        parser.setInput(StringReader(xml))
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.eventType != XmlPullParser.START_TAG || parser.name != "Url") continue
+            val type = parser.getAttributeValue(null, "type").orEmpty().substringBefore(';').trim()
+            val template = parser.getAttributeValue(null, "template")
+            if (type.equals("application/atom+xml", ignoreCase = true) && !template.isNullOrBlank()) {
+                return template
+            }
+        }
+        return null
     }
 }

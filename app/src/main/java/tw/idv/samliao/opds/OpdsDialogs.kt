@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 
 @Composable
 fun SearchDialog(
@@ -213,7 +214,7 @@ fun ConfirmDeleteDialog(
 fun BookDetailDialog(
     book: OpdsBook,
     actionLinks: List<OpdsViewModel.BookActionLink>,
-    coverUrl: String?,
+    coverRequest: ImageRequest?,
     onActionClick: (OpdsViewModel.BookActionLink) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -245,13 +246,13 @@ fun BookDetailDialog(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    if (coverUrl != null) {
+                    if (coverRequest != null) {
                         Box(
                             modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = rememberAsyncImagePainter(model = coverUrl),
+                                painter = rememberAsyncImagePainter(model = coverRequest),
                                 contentDescription = "Book cover",
                                 modifier = Modifier
                                     .height(216.dp)

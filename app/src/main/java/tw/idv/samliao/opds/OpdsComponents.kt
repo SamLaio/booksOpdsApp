@@ -26,12 +26,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import kotlin.math.max
 
 @Composable
 fun BookCard(
     book: OpdsBook,
-    coverUrl: String?,
+    coverRequest: ImageRequest?,
     canNavigate: Boolean,
     canRead: Boolean,
     onOpen: () -> Unit
@@ -57,9 +58,9 @@ fun BookCard(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (coverUrl != null) {
+            if (coverRequest != null) {
                 Image(
-                    painter = rememberAsyncImagePainter(model = coverUrl),
+                    painter = rememberAsyncImagePainter(model = coverRequest),
                     contentDescription = "Book cover",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier

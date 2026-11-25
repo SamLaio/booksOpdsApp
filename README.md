@@ -4,8 +4,8 @@ BooksOpdsApp 是一個以 Kotlin 與 Jetpack Compose 開發的 Android OPDS 閱�
 
 ## 目前版本
 
-- Version Name: `1.1.3`
-- Version Code: `8`
+- Version Name: `1.1.4`
+- Version Code: `9`
 - Application ID: `tw.idv.samliao.opds`
 - Min SDK: `24`
 - Target SDK: `34`
@@ -18,6 +18,9 @@ BooksOpdsApp 是一個以 Kotlin 與 Jetpack Compose 開發的 Android OPDS 閱�
 - 支援 OPDS `next` / `previous` / `prev` 分頁導覽。
 - 支援 OPDS 搜尋連結。
 - 在書目列表與書籍詳情顯示封面、書名、作者、簡介與可下載格式。
+- 支援 SVG 格式的分類圖示與封面。
+- 相容 calibre-web OPDS 的多位作者、HTML／XHTML 簡介與 OpenSearch Atom 搜尋模板。
+- 封面可使用與書庫同來源的 HTTP Basic 驗證；驗證圖片不寫入圖片快取。
 - 透過 Android DownloadManager 下載書籍檔案。
 - 依 URL、MIME type 與 OPDS link 推測下載副檔名。
 - 盡量使用伺服器回傳的 `Content-Disposition` 檔名。
@@ -35,6 +38,8 @@ BooksOpdsApp 是一個以 Kotlin 與 Jetpack Compose 開發的 Android OPDS 閱�
 4. 點選讀取按鈕載入書庫。
 5. 點選分類可進入子分類；點選書籍可查看詳情與下載格式。
 6. 可勾選「記憶」保存 OPDS 設定，之後從記憶清單快速載入。
+
+calibre-web 請使用 `https://你的主機/opds`，若部署在子路徑下也需包含該路徑。需要登入時，填入 calibre-web 帳號與密碼；帳號需有下載權限才能下載書籍。
 
 ## 開發環境
 

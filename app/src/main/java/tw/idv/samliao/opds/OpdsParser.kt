@@ -1,96 +1,110 @@
 package tw.idv.samliao.opds
 
+import androidx.core.text.HtmlCompat
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.StringReader
 
 class OpdsParser {
     fun parse(feedXml: String): OpdsFeed {
-        val factory = XmlPullParserFactory.newInstance()
-        factory.isNamespaceAware = true
-
-        val parser = factory.newPullParser()
+        val parser = XmlPullParserFactory.newInstance().apply {
+            isNamespaceAware = true
+        }.newPullParser()
         parser.setInput(StringReader(feedXml))
 
         var feedTitle = "OPDS Feed"
         val books = mutableListOf<OpdsBook>()
         val feedLinks = mutableListOf<OpdsLink>()
 
-        var eventType = parser.eventType
-        var currentBook: MutableBook? = null
-        var text = ""
-
-        while (eventType != XmlPullParser.END_DOCUMENT) {
-            when (eventType) {
-                XmlPullParser.START_TAG -> {
-                    when (parser.name) {
-                        "entry" -> currentBook = MutableBook()
-                        "link" -> {
-                            val link = OpdsLink(
-                                href = parser.getAttributeValue(null, "href") ?: "",
-                                rel = parser.getAttributeValue(null, "rel") ?: "",
-                                type = parser.getAttributeValue(null, "type") ?: "",
-                                title = parser.getAttributeValue(null, "title") ?: ""
-                            )
-                            if (currentBook == null) {
-                                feedLinks.add(link)
-                            } else {
-                                currentBook.links.add(link)
-                            }
-                        }
-                    }
-                }
-
-                XmlPullParser.TEXT -> {
-                    text = parser.text ?: ""
-                }
-
-                XmlPullParser.END_TAG -> {
-                    when (parser.name) {
-                        "title" -> {
-                            if (currentBook == null) {
-                                if (text.isNotBlank()) feedTitle = text.trim()
-                            } else {
-                                currentBook.title = text.trim()
-                            }
-                        }
-                        "id" -> currentBook?.id = text.trim()
-                        "name" -> {
-                            if (currentBook != null && text.isNotBlank()) {
-                                currentBook.author = text.trim()
-                            }
-                        }
-                        "summary", "content" -> {
-                            if (currentBook != null && currentBook.summary.isBlank()) {
-                                currentBook.summary = text.trim()
-                            }
-                        }
-                        "entry" -> {
-                            currentBook?.let {
-                                books += OpdsBook(
-                                    title = if (it.title.isBlank()) "(Untitled)" else it.title,
-                                    author = if (it.author.isBlank()) "Unknown" else it.author,
-                                    id = it.id,
-                                    summary = it.summary,
-                                    links = it.links.toList()
-                                )
-                            }
-                            currentBook = null
-                        }
-                    }
-                }
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.eventType != XmlPullParser.START_TAG || parser.depth != 2 || !parser.isAtom()) continue
+            when (parser.name) {
+                "title" -> readText(parser).takeIf { it.isNotBlank() }?.let { feedTitle = it }
+                "link" -> feedLinks.add(readLink(parser))
+                "entry" -> books.add(readBook(parser))
             }
-            eventType = parser.next()
         }
-
         return OpdsFeed(title = feedTitle, books = books, links = feedLinks)
     }
 
-    private data class MutableBook(
-        var title: String = "",
-        var author: String = "",
-        var id: String = "",
-        var summary: String = "",
-        val links: MutableList<OpdsLink> = mutableListOf()
-    )
+    private fun readBook(parser: XmlPullParser): OpdsBook {
+        val depth = parser.depth
+        var title = ""
+        var id = ""
+        var summary = ""
+        var content = ""
+        val authors = mutableListOf<String>()
+        val links = mutableListOf<OpdsLink>()
+
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.eventType == XmlPullParser.END_TAG && parser.depth == depth) break
+            if (parser.eventType != XmlPullParser.START_TAG || parser.depth != depth + 1 || !parser.isAtom()) continue
+            when (parser.name) {
+                "title" -> title = readText(parser)
+                "id" -> id = readText(parser)
+                "author" -> readAuthor(parser).takeIf { it.isNotBlank() }?.let { authors.add(it) }
+                "summary" -> summary = readText(parser)
+                "content" -> content = readText(parser)
+                "link" -> links.add(readLink(parser))
+            }
+        }
+        return OpdsBook(
+            title = title.ifBlank { "(Untitled)" },
+            author = authors.joinToString("、").ifBlank { "Unknown" },
+            id = id,
+            summary = summary.ifBlank { content },
+            links = links
+        )
+    }
+
+    private fun readAuthor(parser: XmlPullParser): String {
+        val depth = parser.depth
+        var name = ""
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.eventType == XmlPullParser.END_TAG && parser.depth == depth) break
+            if (parser.eventType == XmlPullParser.START_TAG && parser.depth == depth + 1 &&
+                parser.isAtom() && parser.name == "name"
+            ) {
+                name = readText(parser)
+            }
+        }
+        return name
+    }
+
+    private fun readText(parser: XmlPullParser): String {
+        val depth = parser.depth
+        val type = parser.getAttributeValue(null, "type")
+        val text = StringBuilder()
+        val blockTags = setOf("br", "p", "div", "li", "tr", "h1", "h2", "h3")
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.eventType == XmlPullParser.END_TAG && parser.depth == depth) break
+            when (parser.eventType) {
+                XmlPullParser.TEXT -> text.append(parser.text)
+                XmlPullParser.START_TAG, XmlPullParser.END_TAG -> {
+                    if (parser.name in blockTags) text.append('\n')
+                }
+            }
+        }
+        val value = if (type == "html") {
+            HtmlCompat.fromHtml(text.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT).toString()
+        } else {
+            text.toString()
+        }
+        return value.replace(Regex("[\\t\\r ]+"), " ")
+            .replace(Regex(" *\\n\\s*"), "\n")
+            .trim()
+    }
+
+    private fun readLink(parser: XmlPullParser): OpdsLink {
+        return OpdsLink(
+            href = parser.getAttributeValue(null, "href") ?: "",
+            rel = parser.getAttributeValue(null, "rel") ?: "",
+            type = parser.getAttributeValue(null, "type") ?: "",
+            title = parser.getAttributeValue(null, "title") ?: ""
+        )
+    }
+
+    private fun XmlPullParser.isAtom(): Boolean {
+        return namespace.isNullOrEmpty() || namespace == "http://www.w3.org/2005/Atom"
+    }
 }

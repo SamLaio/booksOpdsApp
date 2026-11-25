@@ -437,7 +437,12 @@ private fun OpdsApp(
                                 val canRead = vm.hasReadableLink(book)
                                 BookCard(
                                     book = book,
-                                    coverUrl = if (!canNavigate && canRead) vm.resolveCoverUrl(book) else null,
+                                    coverRequest = rememberCoverRequest(
+                                        url = vm.resolveCoverUrl(book),
+                                        feedUrl = uiState.url,
+                                        username = uiState.username,
+                                        password = uiState.password
+                                    ),
                                     canNavigate = canNavigate,
                                     canRead = canRead,
                                     onOpen = {
@@ -590,11 +595,16 @@ private fun OpdsApp(
 
     selectedBook?.let { book ->
         val actionLinks = vm.resolveReadableLinks(book)
-        val coverUrl = vm.resolveCoverUrl(book)
+        val coverRequest = rememberCoverRequest(
+            url = vm.resolveCoverUrl(book),
+            feedUrl = uiState.url,
+            username = uiState.username,
+            password = uiState.password
+        )
         BookDetailDialog(
             book = book,
             actionLinks = actionLinks,
-            coverUrl = coverUrl,
+            coverRequest = coverRequest,
             onActionClick = { action ->
                 vm.showDebugMessage(vm.buildDownloadDebugMessage(action))
                 val enqueued = enqueueBookDownload(
